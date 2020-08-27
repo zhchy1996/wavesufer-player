@@ -43,7 +43,8 @@
       ]
     },
     "mac": {
-      "icon": "build/icons/icon.icns"
+      "icon": "build/icons/icon.icns",
+      "target": "pkg"
     },
     "win": {
       "icon": "build/icons/icon.ico"
@@ -53,12 +54,14 @@
     }
   },
   "dependencies": {
-    "vue": "^2.5.16",
+    "abortcontroller-polyfill": "^1.5.0",
     "axios": "^0.18.0",
+    "vue": "^2.5.16",
     "vue-electron": "^1.0.6",
     "vue-router": "^3.0.1",
     "vuex": "^3.0.1",
-    "vuex-electron": "^1.0.0"
+    "vuex-electron": "^1.0.0",
+    "wavesurfer.js": "^4.0.1"
   },
   "devDependencies": {
     "ajv": "^6.5.0",

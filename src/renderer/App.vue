@@ -1,15 +1,51 @@
 <template>
-  <div id="app">
+    <div
+        id="app"
+        @drop.prevent
+        @dragover.prevent
+        @dragleave.prevent
+        @dragenter.prevent
+    >
     <router-view></router-view>
+    <loading :visible="loadingStatus" />
   </div>
 </template>
 
 <script>
-  export default {
-    name: 'audio-player'
+import Vue from 'vue';
+import loading from './components/loading';
+
+export default {
+    name: 'App',
+
+    components: {
+        loading
+    },
+
+    created() {
+        Vue.prototype.$app = this;
+    },
+
+    data() {
+        return {
+            loadingStatus: false
+        };
+    },
+
+    methods: {
+        showLoading() {
+            this.loadingStatus = true;
+        },
+
+        hideLoading() {
+            this.loadingStatus = false;
+        },
+    }
   }
 </script>
 
-<style>
-  /* CSS */
+<style lang="scss">
+    #app {
+        min-height: 100vh;
+    }
 </style>

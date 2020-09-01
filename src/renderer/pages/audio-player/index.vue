@@ -1,12 +1,19 @@
 <template>
-    <div>
+    <div class="audio-player">
         <div id="waveform" />   
-        <button
-            v-if="waveSurfer"
-            @click="playing ? pause() : play()"
-        >
-            {{ playing ? '暂停' : '播放' }}
-        </button>
+        <div id="wave-timeline" />
+
+        <div class="controls">
+            <button
+                v-if="waveSurfer"
+                @click="playing ? pause() : play()"
+            >
+                {{ playing ? '暂停' : '播放' }}
+            </button>
+
+            <input type="text" v-model="zoomRank" @change="zommChange">
+
+        </div>
 
         <div
             class="play-list"
@@ -32,6 +39,7 @@
 <script>
 import {ipcRenderer} from 'electron';
 import WaveSurfer from 'wavesurfer.js';
+import Timeline from 'wavesurfer.js/dist/plugin/wavesurfer.timeline.min';
 import _ from 'underscore';
 import fs from 'fs';
 import path from 'path';
@@ -44,7 +52,8 @@ export default {
         return {
             waveSurfer: null,
             playing: false,
-            filePath: ''
+            filePath: '',
+            zoomRank: 1
         };
     },
 
@@ -64,15 +73,28 @@ export default {
             if (this.waveSurfer) this.waveSurfer.destroy();
 
             const waveSurfer = WaveSurfer.create({
-                container: '#waveform'
+                container: '#waveform',
+                container: '#waveform',
+                waveColor: '#ccc',
+                progressColor: '#1577ef',
+                backgroundColor: 'rgb(242, 244, 249)',
+                barHeight: 2,
+                height: 100,
+                plugins: [
+                    Timeline.create({
+                        container: '#wave-timeline',
+                        fontSize: 14
+                    })
+                ]
             });
             const data = await this.loadMedia(path);
             this.$app.showLoading();
+
             waveSurfer.loadBlob(new Blob([data]));
+
             waveSurfer.on('ready', () => {
                 this.$app.hideLoading();
                 this.duration = parseInt(waveSurfer.getDuration(), 10);
-                console.log('ready')
                 this.waveSurfer = waveSurfer;
             });
             waveSurfer.on('finish', () => {
@@ -119,14 +141,21 @@ export default {
             this.playing = false;
             this.waveSurfer.pause();
         },
+
+        zommChange() {
+            this.waveSurfer.zoom(this.zoomRank);
+        }
     }
 };
 </script>
 
 <style lang="scss" rel="stylesheet/scss" scoped>
+.audio-player {
+    padding: 10px 20px;
+}
+
 #waveform {
     width: 100%;
-    height: 200px;
 }
 
 .play-list {

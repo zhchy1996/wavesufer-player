@@ -2,35 +2,57 @@
     <div class="audio-player">
         <div id="waveform" />   
         <div id="wave-timeline" />
-
+ <!-- v-if="waveSurfer" -->
         <div class="controls">
+            <button @click="back">
+                快退
+            </button>
             <button
-                v-if="waveSurfer"
                 @click="playing ? pause() : play()"
             >
                 {{ playing ? '暂停' : '播放' }}
             </button>
+            <button @click="forward">
+                快进
+            </button>
+        </div>
 
-            <input type="text" v-model="zoomRank" @change="zommChange">
+        <div class="config">
+            <h4>设置</h4>
+            <label for="zoom">波形图缩放</label>
+            <input name="zoom" type="text" v-model="controlConfig.zoomRank" @change="zommChange">
 
+            <label for="back">回退秒数</label>
+            <input name="back" type="text" v-model="controlConfig.backSec">
+
+            <label for="forward">前进秒数</label>
+            <input name="forward" type="text" v-model="controlConfig.forwardSec">
         </div>
 
         <div
             class="play-list"
+            :style="{right: `${playListRight}px`}"
             @drop.prevent="drop"
             @dragover.prevent
             @dragleave.prevent
             @dragenter.prevent
         >
-            列表
+            <div class="btn" @click="playListHandle">
+                播放列表
+            </div>
+
             <div
-                class="item"
-                v-for="({name, path}, index) in playList"
-                :key="path"
-                @click="init(path)"
+                class="list-wrapper"
             >
-                <span>{{ name }}</span>
-                <a @click.stop="deleteItem(index)">x</a>
+                <div
+                    class="item"
+                    v-for="({name, path}, index) in playList"
+                    :key="path"
+                    @click="init(path)"
+                >
+                    <span>{{ name }}</span>
+                    <a @click.stop="deleteItem(index)">x</a>
+                </div>
             </div>
         </div>
     </div>
@@ -39,11 +61,12 @@
 <script>
 import {ipcRenderer} from 'electron';
 import WaveSurfer from 'wavesurfer.js';
-import Timeline from 'wavesurfer.js/dist/plugin/wavesurfer.timeline.min';
 import _ from 'underscore';
 import fs from 'fs';
 import path from 'path';
 import {mapState, mapActions} from 'vuex'
+
+import playerConfig from './constant/player-config';
 
 export default {
     name: 'AudioPlayer',
@@ -53,7 +76,12 @@ export default {
             waveSurfer: null,
             playing: false,
             filePath: '',
-            zoomRank: 1
+            playListRight: -200,
+            controlConfig: {
+                zoomRank: 1,
+                backSec: 5,
+                forwardSec: 5
+            }
         };
     },
 
@@ -72,21 +100,7 @@ export default {
         async init(path) {
             if (this.waveSurfer) this.waveSurfer.destroy();
 
-            const waveSurfer = WaveSurfer.create({
-                container: '#waveform',
-                container: '#waveform',
-                waveColor: '#ccc',
-                progressColor: '#1577ef',
-                backgroundColor: 'rgb(242, 244, 249)',
-                barHeight: 2,
-                height: 100,
-                plugins: [
-                    Timeline.create({
-                        container: '#wave-timeline',
-                        fontSize: 14
-                    })
-                ]
-            });
+            const waveSurfer = WaveSurfer.create(playerConfig);
             const data = await this.loadMedia(path);
             this.$app.showLoading();
 
@@ -113,7 +127,7 @@ export default {
             console.log(event.dataTransfer.files)
             const {dataTransfer: {files}} = event;
             const length = files.length;
-            const playList = [];
+            const playList = this.playList || [];
             
             for(let i = 0; i < length; i++) {
                 console.log(files[i])
@@ -143,7 +157,19 @@ export default {
         },
 
         zommChange() {
-            this.waveSurfer.zoom(this.zoomRank);
+            this.waveSurfer.zoom(this.controlConfig.zoomRank);
+        },
+
+        back() {
+            this.waveSurfer.skipBackward(this.controlConfig.backSec);
+        },
+
+        forward() {
+            this.waveSurfer.skipForward(this.controlConfig.forwardSec);
+        },
+
+        playListHandle() {
+            this.playListRight = this.playListRight < 0 ? 0 : -200;
         }
     }
 };
@@ -151,22 +177,65 @@ export default {
 
 <style lang="scss" rel="stylesheet/scss" scoped>
 .audio-player {
-    padding: 10px 20px;
+    display: border-box;
+    width: 100vw;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
 }
 
 #waveform {
     width: 100%;
 }
 
-.play-list {
+.controls {
+    display: flex;
+    justify-content: center;
+    & > button {
+        margin-right: 10px;
+        padding: 4px 6px;
+        font-size: 14px;
+        border: 0;
+        outline: 0;
+        background: #1890ff;
+        color: #fff; 
+    }
+}
+
+.config {
     display: flex;
     flex-direction: column;
-    width: 200px;
-    height: 200px;
-    background: rgba(0, 0, 0, .2);
+}
 
-    .item {
+.play-list {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    top: 50%;
+    transform: translateY(-50%);
+    transition: right .5s 0s ease-in-out;
+    z-index: 10;
+
+    .btn {
+        width: 20px;
         cursor: pointer;
+    }
+
+    .list-wrapper {
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        padding: 10px;
+        width: 200px;
+        height: 100vh;
+        background: rgba(0, 0, 0, .8);
+        color: #fff;
+
+        .item {
+            display: flex;
+            justify-content: space-between;
+            cursor: pointer;
+        }
     }
 }
 </style>

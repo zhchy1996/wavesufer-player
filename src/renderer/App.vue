@@ -6,9 +6,8 @@
         @dragleave.prevent
         @dragenter.prevent
     >
-    <router-view></router-view>
-    <loading :visible="loadingStatus" />
-  </div>
+        <router-view />
+    </div>
 </template>
 
 <script>

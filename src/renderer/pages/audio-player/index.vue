@@ -1,60 +1,93 @@
 <template>
-    <div class="audio-player">
+    <div
+        class="audio-player"
+    >
         <div id="waveform" />   
         <div id="wave-timeline" />
- <!-- v-if="waveSurfer" -->
-        <div class="controls">
-            <button @click="back">
+
+        <div v-if="waveSurfer" class="controls">
+            <a-button @click="back">
                 快退
-            </button>
-            <button
+            </a-button>
+            <a-button
+                shape="circle"
+                icon="caret-right"
                 @click="playing ? pause() : play()"
             >
-                {{ playing ? '暂停' : '播放' }}
-            </button>
-            <button @click="forward">
+                <!-- {{ playing ? '暂停' : '播放' }} -->
+            </a-button>
+            <a-button @click="forward">
                 快进
-            </button>
+            </a-button>
         </div>
 
         <div class="config">
             <h4>设置</h4>
-            <label for="zoom">波形图缩放</label>
-            <input name="zoom" type="text" v-model="controlConfig.zoomRank" @change="zommChange">
+            <a-row type="flex" justify="space-around" align="middle">
+                <a-col :span="2">缩放</a-col>
+                <a-col :span="16">
+                    <a-slider
+                        :min="1"
+                        :max="80"
+                        v-model="controlConfig.zoomRank"
+                        @change="zommChange"
+                    />
+                </a-col>
 
-            <label for="back">回退秒数</label>
-            <input name="back" type="text" v-model="controlConfig.backSec">
+                <a-col :span="4">
+                    <a-input-number
+                        :min="1"
+                        :max="80"
+                        v-model="controlConfig.zoomRank"
+                        @change="zommChange"
+                    />
+                </a-col>
+            </a-row>
 
-            <label for="forward">前进秒数</label>
-            <input name="forward" type="text" v-model="controlConfig.forwardSec">
+            <a-input
+                type="text"
+                addon-before="回退秒数"
+                v-model="controlConfig.backSec"
+            />
+
+            <a-input
+                addon-before="前进秒数"
+                type="text"
+                v-model="controlConfig.forwardSec"
+            />
         </div>
 
-        <div
-            class="play-list"
-            :style="{right: `${playListRight}px`}"
-            @drop.prevent="drop"
-            @dragover.prevent
-            @dragleave.prevent
-            @dragenter.prevent
+        <div class="list-btn" @click="playListHandle">
+            播放列表
+        </div>
+
+        <a-drawer
+            title="播放列表"
+            placement="right"
+            :closable="true"
+            :visible="visible"
+            @close="visible = false"
         >
-            <div class="btn" @click="playListHandle">
-                播放列表
-            </div>
-
-            <div
-                class="list-wrapper"
-            >
+            <a-spin :spinning="loading">
                 <div
-                    class="item"
-                    v-for="({name, path}, index) in playList"
-                    :key="path"
-                    @click="init(path)"
+                    class="list-wrapper"
+                    @drop.prevent="drop"
+                    @dragover.prevent
+                    @dragleave.prevent
+                    @dragenter.prevent
                 >
-                    <span>{{ name }}</span>
-                    <a @click.stop="deleteItem(index)">x</a>
+                    <div
+                        class="item"
+                        v-for="({name, path}, index) in playList"
+                        :key="path"
+                        @click="init(path)"
+                    >
+                        <span>{{ name }}</span>
+                        <a @click.stop="deleteItem(index)">x</a>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </a-spin>
+        </a-drawer>
     </div>
 </template>
 
@@ -81,7 +114,10 @@ export default {
                 zoomRank: 1,
                 backSec: 5,
                 forwardSec: 5
-            }
+            },
+            visible: true,
+            loading: false,
+            timer: null
         };
     },
 
@@ -102,13 +138,14 @@ export default {
 
             const waveSurfer = WaveSurfer.create(playerConfig);
             const data = await this.loadMedia(path);
-            this.$app.showLoading();
+            this.loading = true
 
             waveSurfer.loadBlob(new Blob([data]));
 
             waveSurfer.on('ready', () => {
-                this.$app.hideLoading();
+                this.loading = false;
                 this.duration = parseInt(waveSurfer.getDuration(), 10);
+                waveSurfer.zoom(this.controlConfig.zoomRank);
                 this.waveSurfer = waveSurfer;
             });
             waveSurfer.on('finish', () => {
@@ -127,7 +164,7 @@ export default {
             console.log(event.dataTransfer.files)
             const {dataTransfer: {files}} = event;
             const length = files.length;
-            const playList = this.playList || [];
+            const playList = _.clone(this.playList) || [];
             
             for(let i = 0; i < length; i++) {
                 console.log(files[i])
@@ -157,7 +194,11 @@ export default {
         },
 
         zommChange() {
-            this.waveSurfer.zoom(this.controlConfig.zoomRank);
+            if (this.timer) clearTimeout(this.timer);
+
+            this.timer = setTimeout(() => {
+                this.waveSurfer.zoom(this.controlConfig.zoomRank);
+            }, 500);
         },
 
         back() {
@@ -168,8 +209,8 @@ export default {
             this.waveSurfer.skipForward(this.controlConfig.forwardSec);
         },
 
-        playListHandle() {
-            this.playListRight = this.playListRight < 0 ? 0 : -200;
+        playListHandle(flag) {
+            this.visible = true;
         }
     }
 };
@@ -191,15 +232,6 @@ export default {
 .controls {
     display: flex;
     justify-content: center;
-    & > button {
-        margin-right: 10px;
-        padding: 4px 6px;
-        font-size: 14px;
-        border: 0;
-        outline: 0;
-        background: #1890ff;
-        color: #fff; 
-    }
 }
 
 .config {
@@ -207,35 +239,19 @@ export default {
     flex-direction: column;
 }
 
-.play-list {
-    position: absolute;
+.list-wrapper {
     display: flex;
-    align-items: center;
-    top: 50%;
-    transform: translateY(-50%);
-    transition: right .5s 0s ease-in-out;
-    z-index: 10;
+    flex-direction: column;
+    box-sizing: border-box;
+    padding: 10px;
+    width: 200px;
+    height: 100vh;
 
-    .btn {
-        width: 20px;
-        cursor: pointer;
-    }
-
-    .list-wrapper {
+    .item {
         display: flex;
-        flex-direction: column;
-        box-sizing: border-box;
-        padding: 10px;
-        width: 200px;
-        height: 100vh;
-        background: rgba(0, 0, 0, .8);
-        color: #fff;
-
-        .item {
-            display: flex;
-            justify-content: space-between;
-            cursor: pointer;
-        }
+        justify-content: space-between;
+        cursor: pointer;
+        margin-top: 5px;
     }
 }
 </style>

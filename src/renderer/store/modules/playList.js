@@ -2,7 +2,12 @@ export default {
     namespaced: true,
 
     state: {
-        playList: []
+        playList: [],
+        storeControlConfig: {
+            zoomRank: 1,
+            backSec: 5,
+            forwardSec: 5
+        }
     },
 
     mutations: {
@@ -12,6 +17,10 @@ export default {
 
         deleteItem(state, index) {
             state.playList.splice(index, 1);
+        },
+
+        changeControlConfig(state, config) {
+            state.storeControlConfig = config;
         }
     },
 
@@ -22,6 +31,10 @@ export default {
 
         deleteAudio({commit}, index) {
             commit('deleteItem', index);
+        },
+
+        saveStoreControlConfig({commit}, config) {
+            commit('changeControlConfig', config);
         }
     }
 }

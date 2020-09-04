@@ -2,7 +2,7 @@
     <div
         class="audio-player"
     >
-        <div id="waveform" />   
+        <div id="waveform" @scroll="console.log(e)" />   
         <div id="wave-timeline" />
 
         <div v-if="waveSurfer" class="controls">
@@ -43,17 +43,23 @@
                 </a-col>
             </a-row>
 
-            <a-input
-                type="text"
-                addon-before="回退秒数"
-                v-model="controlConfig.backSec"
-            />
+            <a-row type="flex" justify="space-around">
+                <a-col :span="6">
+                    <a-input
+                        type="text"
+                        addon-before="回退秒数"
+                        v-model="controlConfig.backSec"
+                    />
+                </a-col>
 
-            <a-input
-                addon-before="前进秒数"
-                type="text"
-                v-model="controlConfig.forwardSec"
-            />
+                <a-col :span="6">
+                    <a-input
+                        addon-before="前进秒数"
+                        type="text"
+                        v-model="controlConfig.forwardSec"
+                    />
+                </a-col>
+            </a-row>
         </div>
 
         <div class="list-btn" @click="playListHandle">
@@ -109,11 +115,7 @@ export default {
             playing: false,
             filePath: '',
             playListRight: -200,
-            controlConfig: {
-                zoomRank: 1,
-                backSec: 5,
-                forwardSec: 5
-            },
+            controlConfig: {},
             listVisible: true,
             loading: false,
             timer: null
@@ -122,7 +124,8 @@ export default {
 
     computed: {
         ...mapState({
-            playList: ({playList: {playList}}) => playList
+            playList: ({playList: {playList}}) => playList,
+            storeControlConfig: ({playList: {storeControlConfig}}) => storeControlConfig
         }),
 
         shortcutKeys() {
@@ -136,11 +139,15 @@ export default {
     },
 
     mounted() {
+        this.controlConfig = _.clone(this.storeControlConfig);
+        this.$watch(() => this.controlConfig, () => {
+            this.saveStoreControlConfig(this.controlConfig);
+        }, {deep: true});
         this.shortcutKey();
     },
 
     methods: {
-        ...mapActions('playList', ['addAudio', 'deleteAudio']),
+        ...mapActions('playList', ['addAudio', 'deleteAudio', 'saveStoreControlConfig']),
 
         async init(path) {
             if (this.waveSurfer) this.waveSurfer.destroy();
@@ -156,6 +163,11 @@ export default {
                 this.duration = parseInt(waveSurfer.getDuration(), 10);
                 waveSurfer.zoom(this.controlConfig.zoomRank);
                 this.waveSurfer = waveSurfer;
+
+                const waveDom = document.querySelector('wave');
+                waveDom.addEventListener('scroll', (e) => {
+                    console.log(e)
+                })
             });
             waveSurfer.on('finish', () => {
                 this.playing = false;

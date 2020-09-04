@@ -12,9 +12,8 @@
             <a-button
                 shape="circle"
                 icon="caret-right"
-                @click="playing ? pause() : play()"
+                @click="playPause"
             >
-                <!-- {{ playing ? '暂停' : '播放' }} -->
             </a-button>
             <a-button @click="forward">
                 快进
@@ -65,8 +64,8 @@
             title="播放列表"
             placement="right"
             :closable="true"
-            :visible="visible"
-            @close="visible = false"
+            :visible="listVisible"
+            @close="listVisible = false"
         >
             <a-spin :spinning="loading">
                 <div
@@ -115,7 +114,7 @@ export default {
                 backSec: 5,
                 forwardSec: 5
             },
-            visible: true,
+            listVisible: true,
             loading: false,
             timer: null
         };
@@ -125,9 +124,19 @@ export default {
         ...mapState({
             playList: ({playList: {playList}}) => playList
         }),
+
+        shortcutKeys() {
+            return {
+                Space: this.playPause,
+                ArrowRight: this.forward,
+                ArrowLeft: this.back
+            };
+        }
+
     },
 
     mounted() {
+        this.shortcutKey();
     },
 
     methods: {
@@ -182,15 +191,9 @@ export default {
             this.init();
         },
 
-        play() {
-            console.log(this.playing)
-            this.playing = true;
-            this.waveSurfer.play();
-        },
-
-        pause() {
-            this.playing = false;
-            this.waveSurfer.pause();
+        playPause() {
+            this.playing = !this.playing;
+            this.waveSurfer.playPause();
         },
 
         zommChange() {
@@ -210,7 +213,15 @@ export default {
         },
 
         playListHandle(flag) {
-            this.visible = true;
+            this.listVisible = true;
+        },
+
+        shortcutKey() {
+            window.addEventListener('keyup', (e) => {
+                const pressKey = e.code || e.keyCode;
+                const handle = this.shortcutKeys[pressKey];
+                if (handle) handle();
+            }, true);
         }
     }
 };

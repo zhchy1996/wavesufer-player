@@ -2,69 +2,113 @@
     <div
         class="audio-player"
     >
-        <div id="waveform" @scroll="console.log(e)" />   
+        <div id="waveform" />   
         <div id="wave-timeline" />
 
         <div v-if="waveSurfer" class="controls">
-            <a-button @click="back">
-                快退
-            </a-button>
             <a-button
+                class="button"
+                icon="fast-backward"
                 shape="circle"
-                icon="caret-right"
+                size="large"
+                @click="back"
+            />
+
+            <a-button
+                class="button"
+                shape="circle"
+                size="large"
+                :icon="playing ? 'pause' : 'caret-right'"
                 @click="playPause"
             >
             </a-button>
-            <a-button @click="forward">
-                快进
-            </a-button>
+
+            <a-button
+                class="button"
+                icon="fast-forward"
+                size="large"
+                shape="circle"
+                @click="forward"
+            />
         </div>
 
-        <div class="config">
-            <h4>设置</h4>
-            <a-row type="flex" justify="space-around" align="middle">
-                <a-col :span="2">缩放</a-col>
-                <a-col :span="16">
-                    <a-slider
-                        :min="1"
-                        :max="80"
-                        v-model="controlConfig.zoomRank"
-                        @change="zommChange"
-                    />
-                </a-col>
+        <a-row
+            class="setting"
+            :style="{width: '100%'}"
+            type="flex"
+            justify="space-between"
+        >
+            <a-col>
+                <a-button
+                    icon="setting"
+                    type="link"
+                    shape="circle"
+                    size="large"
+                    @click="configVisible = true"
+                />
+            </a-col>
 
-                <a-col :span="4">
-                    <a-input-number
-                        :min="1"
-                        :max="80"
-                        v-model="controlConfig.zoomRank"
-                        @change="zommChange"
-                    />
-                </a-col>
-            </a-row>
+            <a-col>
+                <a-button
+                    icon="unordered-list"
+                    type="link"
+                    class="list-btn"
+                    size="large"
+                    @click="listVisible = true"
+                />
+            </a-col>
+        </a-row>
 
-            <a-row type="flex" justify="space-around">
-                <a-col :span="6">
-                    <a-input
-                        type="text"
-                        addon-before="回退秒数"
-                        v-model="controlConfig.backSec"
-                    />
-                </a-col>
+        <a-drawer
+            title="播放列表"
+            placement="left"
+            width="50%"
+            :closable="true"
+            :visible="configVisible"
+            @close="configVisible = false"
+        >
+            <div class="config">
+                <a-row type="flex" justify="space-around" align="middle">
+                    <a-col :span="2">缩放</a-col>
+                    <a-col :span="16">
+                        <a-slider
+                            :min="1"
+                            :max="80"
+                            v-model="controlConfig.zoomRank"
+                            @change="zommChange"
+                        />
+                    </a-col>
 
-                <a-col :span="6">
-                    <a-input
-                        addon-before="前进秒数"
-                        type="text"
-                        v-model="controlConfig.forwardSec"
-                    />
-                </a-col>
-            </a-row>
-        </div>
+                    <a-col :span="4">
+                        <a-input-number
+                            :min="1"
+                            :max="80"
+                            :style="{width: '60px'}"
+                            v-model="controlConfig.zoomRank"
+                            @change="zommChange"
+                        />
+                    </a-col>
+                </a-row>
 
-        <div class="list-btn" @click="playListHandle">
-            播放列表
-        </div>
+                <a-row type="flex" justify="space-around">
+                    <a-col :span="10">
+                        <a-input
+                            type="text"
+                            addon-before="回退秒数"
+                            v-model="controlConfig.backSec"
+                        />
+                    </a-col>
+
+                    <a-col :span="10">
+                        <a-input
+                            addon-before="前进秒数"
+                            type="text"
+                            v-model="controlConfig.forwardSec"
+                        />
+                    </a-col>
+                </a-row>
+            </div>
+        </a-drawer>
 
         <a-drawer
             title="播放列表"
@@ -116,7 +160,8 @@ export default {
             filePath: '',
             playListRight: -200,
             controlConfig: {},
-            listVisible: true,
+            listVisible: false,
+            configVisible: false,
             loading: false,
             timer: null
         };
@@ -163,11 +208,6 @@ export default {
                 this.duration = parseInt(waveSurfer.getDuration(), 10);
                 waveSurfer.zoom(this.controlConfig.zoomRank);
                 this.waveSurfer = waveSurfer;
-
-                const waveDom = document.querySelector('wave');
-                waveDom.addEventListener('scroll', (e) => {
-                    console.log(e)
-                })
             });
             waveSurfer.on('finish', () => {
                 this.playing = false;
@@ -182,13 +222,11 @@ export default {
 
         drop(event) {
             event.preventDefault();
-            console.log(event.dataTransfer.files)
             const {dataTransfer: {files}} = event;
             const length = files.length;
             const playList = _.clone(this.playList) || [];
             
             for(let i = 0; i < length; i++) {
-                console.log(files[i])
                 const {name, path, type} = files[i];
                 if (/mp3|m4a|wav|acc|ape/i.test(type)) playList.push({name, path});
             }
@@ -253,13 +291,18 @@ export default {
 }
 
 .controls {
+    margin-top: 40px;
     display: flex;
     justify-content: center;
+
+    .button {
+        margin-right: 20px;
+    }
 }
 
-.config {
-    display: flex;
-    flex-direction: column;
+.setting {
+    position: fixed;
+    bottom: 0;
 }
 
 .list-wrapper {

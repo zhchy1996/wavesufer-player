@@ -107,6 +107,17 @@
                         />
                     </a-col>
                 </a-row>
+
+                <a-row type="flex" justify="center" style="margin-top: 10px">
+                    <a-col :span="20">
+                        <a-input
+                            type="text"
+                            addon-before="倍速"
+                            v-model="controlConfig.speed"
+                            @change="speedChange"
+                        />
+                    </a-col>
+                </a-row>
             </div>
         </a-drawer>
 
@@ -252,6 +263,10 @@ export default {
             this.timer = setTimeout(() => {
                 this.waveSurfer.zoom(this.controlConfig.zoomRank);
             }, 500);
+        },
+
+        speedChange() {
+            this.waveSurfer.setPlaybackRate(this.controlConfig.speed);
         },
 
         back() {

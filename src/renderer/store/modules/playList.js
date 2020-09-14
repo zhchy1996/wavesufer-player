@@ -6,7 +6,8 @@ export default {
         storeControlConfig: {
             zoomRank: 1,
             backSec: 5,
-            forwardSec: 5
+            forwardSec: 5,
+            speed: 1
         }
     },
 

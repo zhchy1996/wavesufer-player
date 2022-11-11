@@ -30,6 +30,15 @@
                 shape="circle"
                 @click="forward"
             />
+
+            <div style="width: 100px;">
+                <a-slider
+                    :min="0"
+                    :max="100"
+                    v-model="volume"
+                    @change="volumeChange"
+                />
+            </div>
         </div>
 
         <a-row
@@ -174,7 +183,8 @@ export default {
             listVisible: false,
             configVisible: false,
             loading: false,
-            timer: null
+            timer: null,
+            volume: 100
         };
     },
 
@@ -188,7 +198,11 @@ export default {
             return {
                 Space: this.playPause,
                 ArrowRight: this.forward,
-                ArrowLeft: this.back
+                ArrowLeft: this.back,
+                ArrowLeft: this.back,
+                KeyZ: this.back,
+                KeyX: this.playPause,
+                KeyC: this.forward
             };
         }
 
@@ -287,6 +301,10 @@ export default {
                 const handle = this.shortcutKeys[pressKey];
                 if (handle) handle();
             }, true);
+        },
+
+        volumeChange(e) {
+            this.waveSurfer.setVolume(e/100);
         }
     }
 };

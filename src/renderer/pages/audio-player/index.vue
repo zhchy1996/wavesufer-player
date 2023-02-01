@@ -184,7 +184,8 @@ export default {
             configVisible: false,
             loading: false,
             timer: null,
-            volume: 100
+            volume: 100,
+            recordTime: [null, null]
         };
     },
 
@@ -202,7 +203,10 @@ export default {
                 ArrowLeft: this.back,
                 KeyZ: this.back,
                 KeyX: this.playPause,
-                KeyC: this.forward
+                KeyC: this.forward,
+                KeyA: () => this.record(0),
+                KeyD: () => this.record(1),
+                KeyS: this.backToRecord
             };
         }
 
@@ -305,6 +309,20 @@ export default {
 
         volumeChange(e) {
             this.waveSurfer.setVolume(e/100);
+        },
+        // 记录当前位置, 0开始, 1结束
+        record(flag) {
+            const currentTime = this.waveSurfer.getCurrentTime();
+            if (flag === 0 && this.recordTime[1] && currentTime > this.recordTime[1]) {
+                this.recordTime[1] = null;
+            }
+            this.recordTime[flag] = currentTime;
+        },
+        // 会到记录位置
+        backToRecord() {
+            const recordTime = this.recordTime;
+            if (!recordTime[0]) return;
+            this.waveSurfer.play(...recordTime);
         }
     }
 };
